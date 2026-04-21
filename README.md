@@ -48,7 +48,7 @@ These techniques answer the question: *"How do I find the best configuration for
 
 - **Large enough** — 54k rows means K-Fold folds have ~10k samples each, which gives reliable fold-level scores
 - **Well-known** — employers and students recognise it immediately; no time wasted explaining domain context
-- **Imbalanced enough** — the four price categories are not perfectly balanced (~14k / 17k / 16k / 8k), which makes Stratified K-Fold demonstrably better than plain K-Fold
+- **Imbalanced enough** — the four price categories are not perfectly balanced (~13.5k / 17k / 16k / 7.6k), which makes Stratified K-Fold demonstrably better than plain K-Fold
 - **Clean** — no missing values, minimal preprocessing needed, so the focus stays on cross-validation rather than data wrangling
 
 ### How the Target is Created
@@ -75,6 +75,19 @@ Random Forest was chosen because:
 
 ### Hyperparameters Tuned in Tier 2
 
+All four methods tune the same Random Forest, but with different search strategies and parameter spaces:
+
+**Grid Search CV** — exhaustive grid over 4 parameters (54 combinations):
+
+| Parameter | What It Controls | Grid Values |
+|-----------|-----------------|-------------|
+| `n_estimators` | Number of trees in the forest | 50, 100, 200 |
+| `max_depth` | Maximum depth each tree can grow | 10, 20, None |
+| `min_samples_split` | Minimum samples required to split a node | 2, 5, 10 |
+| `max_features` | Number of features considered at each split | `sqrt`, `log2` |
+
+**Random Search CV, scikit-optimize, and Optuna** — broader search over 5 parameters:
+
 | Parameter | What It Controls | Search Range |
 |-----------|-----------------|--------------|
 | `n_estimators` | Number of trees in the forest | 50 – 300 |
@@ -90,10 +103,12 @@ Random Forest was chosen because:
 ### Requirements
 
 ```bash
-pip install numpy pandas matplotlib seaborn scikit-learn scikit-optimize optuna scipy
+pip install numpy pandas matplotlib seaborn scikit-learn scikit-optimize optuna
 ```
 
-The notebook also includes a **Cell 0** that installs `scikit-optimize` and `optuna` directly from inside the notebook using `pip`, so you can run it without pre-installing anything manually.
+> `scipy` is used for `randint` distributions in Random Search and is a standard dependency of most scientific Python environments (it ships with Anaconda and is a transitive dependency of scikit-learn). It does **not** need to be installed separately in most setups.
+
+The notebook also includes a **Cell 0** that installs `scikit-optimize` and `optuna` directly from inside the notebook using `pip`, so you can run it without pre-installing those two packages manually.
 
 ### Run the Notebook
 
@@ -161,7 +176,7 @@ cross_validation.ipynb
 ### Python & sklearn Specifics
 - What `pd.cut()` does, how bin boundaries work, and why `max() + 1` is needed
 - What `LabelEncoder` does, with a side-by-side comparison table vs One-Hot Encoding — and why the choice depends on your model type
-- How to manually loop through `TimeSeriesSplit` without breaking the time ordering (and why `cross_val_score` cannot be used here)
+- How to manually loop through `TimeSeriesSplit` without breaking the time ordering (and why we loop manually instead of using `cross_val_score` — to capture per-fold train sizes, test sizes, and scores separately)
 - How to read sklearn's `cv_results_` dictionary and extract useful information from it
 - How to use a `callback` with `BayesSearchCV` to get clean per-trial progress output
 
