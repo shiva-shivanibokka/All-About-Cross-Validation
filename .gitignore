@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Data cache (datasets are fetched at runtime, never committed)
+scikit_learn_data/
+data/
+
+# Web app
+web/node_modules/
+web/.next/
+web/out/
+web/.vercel/
+web/.env*.local
+
+# OS
+.DS_Store
+Thumbs.db
