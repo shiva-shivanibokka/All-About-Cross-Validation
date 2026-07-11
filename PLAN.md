@@ -25,7 +25,7 @@ validation-first reference with a live web demo. Mirrors the structure of the
 |-----|--------|-------|------|
 | German Credit | `fetch_openml('credit-g', 1)` | (1000, 20) | Through-line: leakage, K-fold family, stratified, LOOCV/repeated, model selection + nested CV. Small → CV matters. Positive (`bad`) rate 0.30. |
 | Bike Sharing | `fetch_openml('Bike_Sharing_Demand', 2)` | (17379, 12) | Real hourly order + regression target `count`. Time-aware CV + regression CV. |
-| Diabetes 130-US | `fetch_openml('diabetes130US', 1)` | (101766, 50) | `patient_nbr` groups (patients recur across encounters). Group-aware CV / leakage. Subsampled to ~20k encounters (whole patients) for runtime. |
+| Parkinsons Telemonitoring | UCI CSV (cached) | (5875, 18) | `subject#` groups: 42 patients x ~139 voice recordings each. Group-aware CV / leakage. **Random KFold R²=0.91 vs GroupKFold R²=−0.57** — the +1.47 inflation is the whole case for group CV. (Replaced diabetes-130, which had too many singleton patients to leak.) |
 
 All three load and pass a shape/leakage self-check via `python cv_datasets.py`.
 

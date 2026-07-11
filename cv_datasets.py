@@ -5,16 +5,20 @@ used everywhere. Categoricals are kept as pandas `category` dtype ON PURPOSE:
 the notebooks build sklearn Pipelines that encode *inside* each CV fold, which is
 the whole point of notebook 01 (no leakage).
 
-All three datasets are fetched from OpenML at runtime and cached locally by
-scikit-learn (~/scikit_learn_data). Nothing is committed to the repo.
+The datasets are fetched at runtime (OpenML for credit-g / bike, UCI for the
+Parkinsons voice recordings) and cached locally under ~/scikit_learn_data.
+Nothing is committed to the repo.
 
-    from cv_datasets import load_credit, load_bike, load_diabetes_groups, feature_types
+    from cv_datasets import load_credit, load_bike, load_parkinsons_groups, feature_types
 """
 from __future__ import annotations
+import os
 import warnings
 import numpy as np
 import pandas as pd
 from sklearn.datasets import fetch_openml
+
+_CACHE = os.path.join(os.path.expanduser("~"), "scikit_learn_data")
 
 
 def feature_types(X: pd.DataFrame) -> tuple[list[str], list[str]]:
@@ -50,52 +54,39 @@ def load_bike() -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 
-def load_diabetes_groups(
-    n_subsample: int | None = 20000, random_state: int = 42
-) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
-    """Diabetes 130-US Hospitals. Returns (X, y, groups).
+_PARKINSONS_URL = (
+    "https://archive.ics.uci.edu/ml/machine-learning-databases/"
+    "parkinsons/telemonitoring/parkinsons_updrs.data"
+)
 
-    groups = `patient_nbr`: one patient can have MANY hospital encounters, so the
-    same patient can land in both train and test unless you split by group. That is
-    the canonical group-leakage story (notebook 03).
 
-    y = early readmission (readmitted '<30' days = 1, else 0).
+def load_parkinsons_groups() -> tuple[pd.DataFrame, pd.Series, pd.Series]:
+    """UCI Parkinsons Telemonitoring. Returns (X, y, groups).
 
-    Subsampled to `n_subsample` encounters by default for notebook-friendly runtimes;
-    subsampling keeps whole patients together so groups stay intact.
+    5,875 biomedical voice recordings from **42 patients** (~139 recordings each),
+    predicting `total_UPDRS` (disease severity, a regression target).
+
+    groups = `subject#`: every patient contributes ~139 nearly-identical recordings.
+    If you split rows at random, the same patient lands in both train and test and the
+    model simply recognizes the patient -> hugely inflated R^2. Splitting by patient
+    (GroupKFold) reveals the model barely generalizes to *new* people. This is the
+    canonical, dramatic group-leakage story (notebook 03).
+
+    Downloaded once from UCI and cached under ~/scikit_learn_data.
     """
-    d = fetch_openml("diabetes130US", version=1, as_frame=True)
-    df = d.frame.copy()
+    cache = os.path.join(_CACHE, "parkinsons_updrs.csv")
+    if os.path.exists(cache):
+        df = pd.read_csv(cache)
+    else:
+        df = pd.read_csv(_PARKINSONS_URL)
+        os.makedirs(_CACHE, exist_ok=True)
+        df.to_csv(cache, index=False)
 
-    groups_full = df["patient_nbr"]
-    y_full = (df["readmitted"] == "<30").astype(int).rename("readmit_lt30")
-
-    # Drop ids, the target, and columns that are mostly missing or extreme-cardinality.
-    drop = [
-        "encounter_id", "patient_nbr", "readmitted",
-        "weight", "payer_code", "medical_specialty",  # ~50-97% missing
-        "diag_1", "diag_2", "diag_3",                  # hundreds of ICD codes each
-    ]
-    X_full = df.drop(columns=drop)
-
-    if n_subsample is not None and n_subsample < len(df):
-        # Sample whole patients, not rows, so no group is split by the subsample.
-        rng = np.random.RandomState(random_state)
-        order = rng.permutation(groups_full.unique())
-        keep, seen = [], 0
-        gsizes = groups_full.value_counts()
-        for g in order:
-            keep.append(g)
-            seen += int(gsizes[g])
-            if seen >= n_subsample:
-                break
-        mask = groups_full.isin(keep).to_numpy()
-        X_full, y_full, groups_full = X_full[mask], y_full[mask], groups_full[mask]
-
-    X = X_full.reset_index(drop=True)
-    y = y_full.reset_index(drop=True)
-    groups = groups_full.reset_index(drop=True).rename("patient_nbr")
-    return X, y, groups
+    groups = df["subject#"].rename("subject")
+    y = df["total_UPDRS"].astype(float).rename("total_UPDRS")
+    # Drop ids and the two targets; test_time is when the recording was taken (leaks age).
+    X = df.drop(columns=["subject#", "motor_UPDRS", "total_UPDRS", "test_time"])
+    return X.reset_index(drop=True), y.reset_index(drop=True), groups.reset_index(drop=True)
 
 
 if __name__ == "__main__":
@@ -110,15 +101,13 @@ if __name__ == "__main__":
     assert len(Xb) == 17379 and yb.min() >= 0
     assert "count" not in Xb.columns
 
-    Xd, yd, gd = load_diabetes_groups(n_subsample=20000)
-    assert len(Xd) == len(yd) == len(gd)
-    # The whole reason this dataset is here: patients recur across rows.
-    assert gd.nunique() < len(gd), "groups must repeat or GroupKFold is pointless"
-    n_num, n_cat = feature_types(Xd)
-    assert len(n_num) + len(n_cat) == Xd.shape[1]
+    Xp, yp, gp = load_parkinsons_groups()
+    assert len(Xp) == len(yp) == len(gp) == 5875
+    # The whole reason this dataset is here: each patient recurs ~139 times.
+    assert gp.nunique() == 42 and (gp.value_counts() > 1).all(), "groups must recur"
 
     print("cv_datasets self-check OK")
-    print(f"  credit-g : {Xc.shape}, positive rate {yc.mean():.2f}")
-    print(f"  bike     : {Xb.shape}, target range [{yb.min():.0f}, {yb.max():.0f}]")
-    print(f"  diabetes : {Xd.shape}, {gd.nunique()} patients / {len(gd)} encounters, "
-          f"positive rate {yd.mean():.3f}")
+    print(f"  credit-g   : {Xc.shape}, positive rate {yc.mean():.2f}")
+    print(f"  bike       : {Xb.shape}, target range [{yb.min():.0f}, {yb.max():.0f}]")
+    print(f"  parkinsons : {Xp.shape}, {gp.nunique()} patients / {len(gp)} recordings "
+          f"(~{len(gp)//gp.nunique()} each), UPDRS range [{yp.min():.1f}, {yp.max():.1f}]")
