@@ -32,10 +32,14 @@ All three load and pass a shape/leakage self-check via `python cv_datasets.py`.
 ## Notebook roadmap
 | # | Notebook | Datasets | Key methods | Status |
 |---|----------|----------|-------------|--------|
-| 01 | Foundations & the Leakage Trap | credit-g | train-error vs holdout, **Pipeline-in-fold vs leaky preprocessing** (measured gap), choosing K (bias/variance/runtime) | TODO |
-| 02 | The K-Fold Family | credit-g + bike | KFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, LOOCV, Leave-P-Out, `cross_val_predict` / OOF, **regression CV (R²/RMSE)** | TODO |
-| 03 | Grouped & Time-Aware CV | diabetes-130 + bike | GroupKFold, StratifiedGroupKFold, LeaveOneGroupOut, TimeSeriesSplit (expanding vs sliding), **purged & embargoed CV** | TODO |
-| 04 | Model Selection with CV | credit-g | Grid, Random, **Successive Halving**, Bayesian (skopt GP + Optuna TPE), **nested CV** | TODO (upgrades the old notebook) |
+| 01 | Foundations & the Leakage Trap | credit-g | train-error vs holdout, **Pipeline-in-fold vs leaky preprocessing** (0.82 AUC from noise), choosing K (bias/variance/runtime) | ✅ done (18 cells, 0 err) |
+| 02 | The K-Fold Family | credit-g + bike | KFold, StratifiedKFold, RepeatedStratifiedKFold, ShuffleSplit, LOOCV, Leave-P-Out, `cross_val_predict` / OOF, **regression CV (R²/RMSE)** | ✅ done (21 cells, 0 err) |
+| 03 | Grouped & Time-Aware CV | parkinsons + bike | GroupKFold, StratifiedGroupKFold, LeaveOneGroupOut, TimeSeriesSplit (expanding vs sliding), **purged & embargoed CV** | ✅ done (19 cells, 0 err) |
+| 04 | Model Selection with CV | credit-g | Grid, Random, **Successive Halving**, Bayesian (skopt GP + Optuna TPE), **nested CV** | ✅ done (22 cells, 0 err) |
+
+**Web app + export script + README: ✅ done.** Next.js visualizer builds clean (104 kB first load),
+served locally and verified rendering. Remaining: push branch `rebuild-cv-flagship`, then link on
+Vercel and deploy (see [[vercel-deploy-flow]]).
 
 **Style rule (all notebooks):** match/exceed the supervised repo — every section opens in
 plain English, heavy inline comments, and every chart gets a dedicated
