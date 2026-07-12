@@ -14,7 +14,7 @@ export const CV_TABS: CvTab[] = [
     help: "A demo strip of samples (each column) split into folds (each row). Blue = trained on, red = held out to test. Switch splitters to see how structure — classes, groups, time — changes the split.",
   },
   {
-    id: "leakage", title: "Leakage", badge: "German Credit",
+    id: "leakage", title: "Leakage", badge: "pure noise",
     tagline: "One leaky feature-selection step, run on all the data before splitting, manufactures 0.82 accuracy out of features that are 100% random noise.",
     help: "Data leakage is letting the model — or your choices about it — peek at the test rows. Here, selecting features on the full dataset before CV leaks the answer, so pure noise looks predictive.",
   },

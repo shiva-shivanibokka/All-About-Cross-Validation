@@ -8,7 +8,7 @@ import { HowToRead, Sw } from "./HowToRead";
 
 export type StoryId = "leakage" | "groups" | "time" | "nested";
 
-const RED = "var(--test)", GREEN = "var(--good)", BLUE = "var(--train)", AMBER = "var(--amber)";
+const RED = "var(--test)", GREEN = "var(--good)";
 
 type Story = {
   bars: Bar[];
@@ -73,8 +73,8 @@ function build(h: Headline, c: Charts | null, id: StoryId): Story {
               <div className="how" style={{ marginTop: 0 }}>
                 <h4>◧ What the scatter shows</h4>
                 <ul>
-                  <li><Sw c={GREEN} /> under a <b>random split</b> the model has already seen this patient in training, so its predictions hug the diagonal — memorized, not learned.</li>
-                  <li><Sw c={RED} /> under <b>GroupKFold</b> the patient is entirely unseen, and the predictions scatter far off the &ldquo;perfect&rdquo; y = x line.</li>
+                  <li><Sw c={RED} /> under a <b>random split</b> the model has already seen this patient in training, so its predictions hug the diagonal — memorized, not learned.</li>
+                  <li><Sw c={GREEN} /> under <b>GroupKFold</b> the patient is entirely unseen, and the predictions scatter far off the &ldquo;perfect&rdquo; y = x line.</li>
                   <li>Same model, same patient — the only difference is whether the split let it cheat.</li>
                 </ul>
               </div>
@@ -91,8 +91,8 @@ function build(h: Headline, c: Charts | null, id: StoryId): Story {
           points: [
             <>The bars are R² (fraction of variance explained); the dashed line is <b>R² = 0</b>, what you&apos;d get by always guessing the average.</>,
             <>In the dot plot each dot is one of the 42 patients; the x-axis is that patient&apos;s average error in UPDRS points.</>,
-            <><Sw c={BLUE} /> under a <b>random split</b> every patient sits near-perfect (all left of the amber baseline).</>,
-            <><Sw c={RED} /> under <b>GroupKFold</b> a long tail of patients lands far past the baseline — the model is badly wrong about people it never trained on.</>,
+            <><Sw c={RED} /> under a <b>random split</b> every patient sits near-perfect (all left of the amber baseline) — the flattering lie.</>,
+            <><Sw c={GREEN} /> under <b>GroupKFold</b> a long tail of patients lands far past the baseline — the honest picture: the model is badly wrong about people it never trained on.</>,
           ],
           takeaway: <>When one entity contributes many rows, a random split lets the model recognize the entity instead of learning the pattern. Split on the entity and the real, much worse, performance appears.</>,
         },

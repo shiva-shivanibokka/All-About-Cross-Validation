@@ -6,13 +6,13 @@ import { Charts } from "../lib/data";
 
 const AXIS = "var(--muted)";
 const GRID = "var(--border)";
-const RED = "var(--test)";
-const GREEN = "var(--good)";
-const BLUE = "var(--train)";
+const RED = "var(--test)";     // the leaky / random / misleading method (app-wide)
+const GREEN = "var(--good)";   // the honest method (app-wide)
 const CYAN = "var(--cyan)";
 
 const lin = (v: number, d0: number, d1: number, r0: number, r1: number) =>
   r0 + ((v - d0) / (d1 - d0)) * (r1 - r0);
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 function txt(x: number, y: number, s: string, opts: { anchor?: string; color?: string; size?: number; mono?: boolean } = {}) {
   return (
@@ -34,7 +34,7 @@ export function LeakageCurve({ d }: { d: Charts["leakage_curve"] }) {
   const x0 = Math.min(...xs), x1 = Math.max(...xs);
   const y0 = 0.4, y1 = 0.9;
   const X = (c: number) => lin(Math.log10(c), x0, x1, L, W - R);
-  const Y = (v: number) => lin(v, y0, y1, H - B, T);
+  const Y = (v: number) => clamp(lin(v, y0, y1, H - B, T), T, H - B); // stay inside the box if data shifts
   const path = (ys: number[]) => d.feature_counts.map((c, i) => `${i ? "L" : "M"}${X(c).toFixed(1)},${Y(ys[i]).toFixed(1)}`).join(" ");
   const fmt = (c: number) => (c >= 1000 ? `${c / 1000}k` : `${c}`);
   return (
@@ -83,10 +83,10 @@ export function PatientErrors({ d }: { d: Charts["patient_errors"] }) {
       {txt(L - 10, laneR + 18, "split", { anchor: "end", size: 11 })}
       {txt(L - 10, laneG + 4, "GroupKFold", { anchor: "end", size: 12 })}
       {d.random_mae.map((v, i) => (
-        <circle key={`r${i}`} cx={X(v)} cy={laneR + jitter(i)} r={4} fill={BLUE} opacity={0.7} />
+        <circle key={`r${i}`} cx={X(v)} cy={laneR + jitter(i)} r={4} fill={RED} opacity={0.75} />
       ))}
       {d.group_mae.map((v, i) => (
-        <circle key={`g${i}`} cx={X(v)} cy={laneG + jitter(i)} r={4} fill={v > d.baseline_mae ? RED : GREEN} opacity={0.75} />
+        <circle key={`g${i}`} cx={X(v)} cy={laneG + jitter(i)} r={4} fill={GREEN} opacity={0.75} />
       ))}
       {/* x axis */}
       <line x1={L} x2={W - R} y1={H - B + 14} y2={H - B + 14} stroke={GRID} />
@@ -105,7 +105,7 @@ export function PredVsActual({ d }: { d: Charts["patient_scatter"] }) {
   const lo = Math.min(...all) - 1, hi = Math.max(...all) + 1;
   const X = (v: number) => lin(v, lo, hi, L, S - R);
   const Y = (v: number) => lin(v, lo, hi, S - B, T);
-  const ticks = [Math.ceil(lo / 5) * 5, Math.round((lo + hi) / 2 / 5) * 5, Math.floor(hi / 5) * 5];
+  const ticks = [...new Set([Math.ceil(lo / 5) * 5, Math.round((lo + hi) / 2 / 5) * 5, Math.floor(hi / 5) * 5])];
   return (
     <svg viewBox={`0 0 ${S} ${S}`} role="img" aria-label="Predicted vs actual for one patient">
       {/* perfect-prediction diagonal */}
@@ -117,8 +117,8 @@ export function PredVsActual({ d }: { d: Charts["patient_scatter"] }) {
           {txt(L - 8, Y(t) + 4, `${t}`, { anchor: "end", mono: true })}
         </g>
       ))}
-      {d.pred_group.map((p, i) => <circle key={`g${i}`} cx={X(d.actual[i])} cy={Y(p)} r={3.2} fill={RED} opacity={0.7} />)}
-      {d.pred_random.map((p, i) => <circle key={`r${i}`} cx={X(d.actual[i])} cy={Y(p)} r={3.2} fill={GREEN} opacity={0.7} />)}
+      {d.pred_group.map((p, i) => <circle key={`g${i}`} cx={X(d.actual[i])} cy={Y(p)} r={3.2} fill={GREEN} opacity={0.7} />)}
+      {d.pred_random.map((p, i) => <circle key={`r${i}`} cx={X(d.actual[i])} cy={Y(p)} r={3.2} fill={RED} opacity={0.7} />)}
       {txt(S / 2, S - 4, "actual UPDRS", {})}
       <text x={14} y={S / 2} transform={`rotate(-90 14 ${S / 2})`} textAnchor="middle" style={{ fill: AXIS, fontSize: 11 }}>predicted UPDRS</text>
     </svg>
