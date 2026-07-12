@@ -4,6 +4,7 @@
 > four deeply-explained notebooks on real datasets, plus an interactive browser visualizer
 > of the fold layouts and the leakage traps that quietly manufacture fake scores.
 
+[![CI](https://github.com/shiva-shivanibokka/All-About-Cross-Validation/actions/workflows/ci.yml/badge.svg)](https://github.com/shiva-shivanibokka/All-About-Cross-Validation/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://cross-validation-visualizer.vercel.app)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](requirements.txt)
@@ -228,16 +229,21 @@ the export if you change a notebook or the export script.
 
 ## Testing
 
-There is **no formal pytest suite** — this is a teaching repo, so correctness is enforced two ways
-instead:
+There is **no formal pytest suite** — this is a teaching repo, so correctness is enforced by checks
+that run automatically in **CI on every push** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)):
 
 - **Runnable self-check:** `python cv_datasets.py` asserts the shape, class balance, and group
   invariants of all three datasets (e.g. that Parkinsons really has 42 recurring patients).
 - **Executable notebooks:** all four notebooks are executed with
   `jupyter nbconvert --to notebook --execute` and verified to contain **zero error cells** — the
   prose numbers are the live outputs, not stale copy.
+- **Drift gate:** CI regenerates the web artifacts and fails if `headline.json` no longer matches the
+  notebook-sourced constants — so the visualizer can't silently disagree with the notebooks.
+- **Web build:** `tsc --noEmit` + `next build` type-check and compile the app.
 
-Adding CI to run both automatically is on the roadmap below.
+The one gap that remains: the checks verify the notebooks *run* and that the headline numbers are in
+sync, but they don't assert every intermediate numeric output — a subtly wrong (but non-erroring)
+value could still slip through.
 
 ---
 
@@ -257,15 +263,15 @@ The visualizer is **live on Vercel**: **https://cross-validation-visualizer.verc
 
 **Known limitations (today):**
 - The four **headline comparison numbers** in the visualizer are constants transcribed from the
-  notebooks, so they must be re-synced after a notebook change (the fold layouts and detailed charts
-  *are* recomputed live by the export script).
-- **No automated CI** yet — notebook execution and artifact regeneration are run manually.
+  notebooks (the fold layouts and detailed charts *are* recomputed live by the export script). They
+  must be re-synced after a notebook change — CI now enforces this with a drift gate, but the sync
+  itself is still manual.
 - The **Fold Explorer** uses a 48-sample demo strip for legibility; it illustrates fold *membership*,
   not the full datasets.
 
 **Planned:**
-- **GitHub Actions CI** to execute all notebooks (0-error gate), regenerate the web artifacts, and
-  typecheck/build the app on every push.
+- **Auto-extract the headline numbers** from the executed notebooks so nothing is hand-transcribed,
+  removing the drift risk at the source rather than just gating it.
 - **More CV methods** — a nested-CV distribution ("winner's curse") visualization, deeper
   purged/embargoed CV, and additional splitters.
 

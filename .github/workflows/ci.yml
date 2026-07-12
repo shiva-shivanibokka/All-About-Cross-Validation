@@ -1,0 +1,103 @@
+name: CI
+
+# Runs on every push to main and every PR. Two independent jobs:
+#   web       — typecheck + production build of the Next.js visualizer (fully deterministic)
+#   notebooks — install deps, self-check the datasets, execute all 4 notebooks with a
+#               0-error gate, regenerate the web artifacts, and fail if the headline
+#               numbers have drifted out of sync with the notebooks.
+#
+# The drift gate only checks headline.json, which is written from pure Python constants
+# and is therefore byte-identical on every platform — so a legitimate green build never
+# flips red on cross-platform floating-point noise in the computed charts.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web — typecheck + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Type-check
+        run: npx tsc --noEmit
+      - name: Production build
+        run: npm run build
+
+  notebooks:
+    name: Notebooks + artifacts — Python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Datasets are fetched once from OpenML/UCI and cached, so later runs need no network.
+      - name: Cache datasets
+        uses: actions/cache@v4
+        with:
+          path: ~/scikit_learn_data
+          key: sklearn-data-v1
+
+      # Prefetch + validate the datasets. Retry to absorb transient upstream hiccups so the
+      # badge doesn't flip red on a momentary OpenML/UCI blip.
+      - name: Fetch datasets + self-check
+        run: |
+          for i in 1 2 3; do
+            python cv_datasets.py && exit 0
+            echo "attempt $i failed — retrying in 15s"; sleep 15
+          done
+          exit 1
+
+      # Execute every notebook top-to-bottom. nbconvert --execute exits non-zero on any cell
+      # error, so this is the "0-error gate". Output goes to a temp dir so the repo stays clean.
+      - name: Execute notebooks (0-error gate)
+        run: |
+          for nb in 01_foundations_and_leakage 02_the_kfold_family 03_grouped_and_time_aware 04_model_selection; do
+            echo "::group::executing $nb"
+            jupyter nbconvert --to notebook --execute \
+              --ExecutePreprocessor.timeout=600 \
+              --ExecutePreprocessor.kernel_name=python3 \
+              --output-dir "$RUNNER_TEMP" "$nb.ipynb"
+            echo "::endgroup::"
+          done
+
+      - name: Regenerate web artifacts
+        run: python scripts/export_web_artifacts.py
+
+      # The one file whose values are transcribed by hand from the notebooks — if it drifts,
+      # the visualizer would show numbers the notebooks disagree with. Constants only, so this
+      # comparison is deterministic across platforms.
+      - name: Assert headline numbers are in sync with the notebooks
+        run: |
+          if ! git diff --quiet -- web/public/headline.json; then
+            echo "::error::web/public/headline.json is out of sync with the HEADLINE constants in scripts/export_web_artifacts.py."
+            echo "Fix: update HEADLINE to match the notebook outputs, run 'python scripts/export_web_artifacts.py', and commit."
+            git --no-pager diff -- web/public/headline.json
+            exit 1
+          fi
+          echo "headline.json is in sync with the notebooks."
