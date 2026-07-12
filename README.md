@@ -4,11 +4,14 @@
 > deeply-explained notebooks on real datasets, plus an interactive browser visualizer of the
 > fold layouts and leakage traps.
 
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://cross-validation-visualizer.vercel.app)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](requirements.txt)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.5+-F7931E?logo=scikitlearn&logoColor=white)](requirements.txt)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=nextdotjs)](web/package.json)
-[![Notebooks](https://img.shields.io/badge/notebooks-4%20%C2%B7%200%20errors-brightgreen)](.)
+[![Deployed on Vercel](https://img.shields.io/badge/deploy-Vercel-black?logo=vercel)](https://cross-validation-visualizer.vercel.app)
+
+**▶ Live visualizer: https://cross-validation-visualizer.vercel.app**
 
 ---
 
@@ -73,6 +76,8 @@ the notebooks by [`scripts/export_web_artifacts.py`](scripts/export_web_artifact
 python scripts/export_web_artifacts.py   # writes web/public/{folds,headline}.json
 cd web && npm install && npm run dev      # http://localhost:3000
 ```
+
+**▶ Deployed live: https://cross-validation-visualizer.vercel.app**
 
 ---
 
