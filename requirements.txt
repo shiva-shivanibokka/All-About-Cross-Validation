@@ -1,12 +1,16 @@
 # Core ML & data
-scikit-learn>=1.5
+# Upper bounds keep the stack reproducible: scikit-optimize (below) reaches into
+# scikit-learn internals and breaks on the very newest releases, and its pinned range
+# below is the one this project is tested against. numpy is held on 1.x for the same
+# scikit-optimize compatibility. Relax these once scikit-optimize supports newer versions.
+scikit-learn>=1.5,<1.9
 pandas>=2.2
-numpy>=1.26
+numpy>=1.26,<2.0
 scipy>=1.13
 
 # Hyperparameter optimization (notebook 04)
 optuna>=3.6
-scikit-optimize>=0.10
+scikit-optimize>=0.10,<0.11
 
 # Plotting
 matplotlib>=3.9

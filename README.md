@@ -18,10 +18,10 @@
 
 ## 🧭 Recruiter TL;DR
 
-- **What it is:** an end-to-end teaching project on cross-validation — four notebooks that go
-  from *"why training accuracy lies"* to **nested cross-validation**, paired with a deployed
-  **Next.js visualizer** that renders the real scikit-learn fold layouts and leakage results in
-  the browser.
+- **What it is:** an end-to-end teaching project on cross-validation — five notebooks that go
+  from *"why training accuracy lies"* to **nested cross-validation** and learning-curve diagnostics,
+  paired with a deployed **Next.js visualizer** that renders the real scikit-learn fold layouts and
+  leakage results in the browser.
 - **The hardest part:** making the lessons *provable, not asserted*. Every claim is a number
   computed live with scikit-learn on a real dataset, then piped through a small export step into
   a dependency-free browser app — so the notebooks are the single source of truth and the site
@@ -56,6 +56,7 @@ The numbers come straight from the notebooks (and drive the live visualizer).
 | Trap | Wrong way | Honest way | Where |
 |------|-----------|------------|-------|
 | **Leakage from feature selection** | **0.82** accuracy | **0.49** accuracy (≈ chance) | NB01 · pure-noise data |
+| **Resampling leakage** (oversample before split) | **AUC 0.965** | **AUC 0.794** (a fake **+0.17**) | NB05 · German Credit |
 | **Group leakage** (patient recurs) | **R² 0.91** / MAE 2.4 | **R² −0.57** / MAE 10.8 | NB03 · Parkinsons |
 | **Time leakage** (shuffled series) | **R² 0.947** | **R² 0.802** (a fake **+0.15**) | NB03 · Bike Sharing |
 | **Selection bias** (`best_score_`) | **0.795** | **0.790 ± 0.019** nested | NB04 · German Credit |
@@ -82,6 +83,7 @@ Each notebook opens in plain English, comments every line, and explains every ch
 | 02 | [The K-Fold Family](02_the_kfold_family.ipynb) | `KFold`, `StratifiedKFold`, `RepeatedStratifiedKFold`, `ShuffleSplit`, **LOOCV / Leave-P-Out**, `cross_val_predict` (out-of-fold), **regression CV** | Credit + Bike |
 | 03 | [Grouped & Time-Aware CV](03_grouped_and_time_aware.ipynb) | `GroupKFold`, `StratifiedGroupKFold`, `LeaveOneGroupOut`, `TimeSeriesSplit` (expanding vs sliding), **purged & embargoed CV** | Parkinsons + Bike |
 | 04 | [Model Selection with CV](04_model_selection.ipynb) | Grid, Random, **Successive Halving**, Bayesian (**GP** via scikit-optimize + **TPE** via Optuna), and **nested cross-validation** | German Credit |
+| 05 | [Resampling Leakage & Diagnostic Curves](05_resampling_and_curves.ipynb) | **resampling-in-CV leakage** (oversample before vs inside the fold), **learning curves** & **validation curves** (bias/variance diagnosis) | German Credit |
 
 ---
 
@@ -105,17 +107,20 @@ Run `python cv_datasets.py` to fetch all three and print a self-check.
 
 A **Next.js** app (100% client-side, no backend, no data leaves your machine) that reads small JSON
 artifacts exported from the notebooks. All charts are **hand-rolled inline SVG — no charting
-library.** Seven tabs, each with a "How to read this" explainer:
+library.** Nine tabs, each with a "How to read this" explainer:
 
 - **Fold Explorer** — real scikit-learn fold membership for KFold / Stratified / Group / TimeSeries
   / Purged, on a demo strip you can eyeball column by column.
 - **Leakage** — the honest-vs-leaky bars *plus* a line chart showing the lie grow as you offer more
   noise features.
+- **Resampling Leakage** — oversampling before vs inside the fold (AUC 0.965 → 0.794).
 - **Group Leakage** — the R² collapse, a per-patient error strip plot (the long tail GroupKFold
   exposes), and a predicted-vs-actual scatter for one held-out patient.
 - **Time Leakage** — the fake +0.15 R² from shuffling a time series.
 - **Nested CV** — `best_score_` vs the honest nested estimate.
 - **Out-of-Fold** — a `cross_val_predict` ROC curve (AUC 0.792) and confusion matrix on German Credit.
+- **Learning Curves** — a learning curve (score vs data size) and a validation curve (score vs model
+  complexity), the CV-as-a-bias/variance-diagnostic view.
 - **About** — the whole series in plain language.
 
 ---
@@ -131,7 +136,7 @@ drift from the notebooks** (regenerate the artifacts and the site updates).
 flowchart LR
     subgraph src["Source of truth (Python)"]
         DS["cv_datasets.py<br/>shared loaders + self-check"]
-        NB["4 notebooks<br/>real scikit-learn, 3 datasets"]
+        NB["5 notebooks<br/>real scikit-learn, 3 datasets"]
     end
     DS --> NB
     DS --> EXP["scripts/export_web_artifacts.py<br/>recomputes fold layouts + charts<br/>from real scikit-learn"]
@@ -144,7 +149,7 @@ flowchart LR
 **Why this shape?** A teaching tool has to be *trustworthy* first. Alternatives like re-running
 models in the browser (heavy, non-reproducible) or hard-coding chart data by hand (drifts silently)
 were rejected in favor of a reproducible export: `export_web_artifacts.py` recomputes the fold
-layouts and detailed charts directly from scikit-learn, and the four headline comparison numbers are
+layouts and detailed charts directly from scikit-learn, and the headline comparison numbers are
 transcribed from the notebooks as documented constants. Keeping the app 100% client-side means it
 deploys as static files, costs nothing to run, and keeps every computation on the visitor's machine.
 
@@ -154,7 +159,7 @@ deploys as static files, costs nothing to run, and keeps every computation on th
 
 | Layer | Tools | Notes |
 |-------|-------|-------|
-| **ML / data** | scikit-learn ≥1.5, pandas, numpy, scipy | fold splitters, pipelines, `cross_val_predict`, metrics |
+| **ML / data** | scikit-learn (≥1.5, `<1.9`), pandas, numpy (`<2.0`), scipy | fold splitters, pipelines, `cross_val_predict`, learning/validation curves, metrics. Upper bounds keep scikit-optimize compatible + CI reproducible. |
 | **Hyperparameter search** | Optuna (TPE), scikit-optimize (GP), sklearn Halving | four search strategies compared under nested CV |
 | **Plotting (notebooks)** | matplotlib, seaborn | every figure has a "How to Read This Chart" aside |
 | **Data export** | Python stdlib + scikit-learn | `scripts/export_web_artifacts.py` → static JSON |
@@ -214,12 +219,14 @@ the export if you change a notebook or the export script.
 ├── 02_the_kfold_family.ipynb          # NB02 — K-Fold family, LOOCV, out-of-fold
 ├── 03_grouped_and_time_aware.ipynb    # NB03 — group / time / purged CV
 ├── 04_model_selection.ipynb           # NB04 — search strategies + nested CV
+├── 05_resampling_and_curves.ipynb     # NB05 — resampling leakage + learning/validation curves
 ├── cv_datasets.py                     # shared real-dataset loaders (+ runnable self-check)
 ├── scripts/
 │   └── export_web_artifacts.py        # recompute fold layouts + charts → web/public/*.json
 ├── web/                               # Next.js visualizer (deployed to Vercel)
 │   ├── app/                           # pages, components, inline-SVG charts, data types
 │   └── public/                        # folds.json · headline.json · charts.json
+├── .github/workflows/ci.yml           # CI: notebooks 0-error gate + drift gate + web build
 ├── PLAN.md                            # living build plan / design decisions
 ├── requirements.txt
 └── LICENSE
@@ -234,7 +241,7 @@ that run automatically in **CI on every push** ([`.github/workflows/ci.yml`](.gi
 
 - **Runnable self-check:** `python cv_datasets.py` asserts the shape, class balance, and group
   invariants of all three datasets (e.g. that Parkinsons really has 42 recurring patients).
-- **Executable notebooks:** all four notebooks are executed with
+- **Executable notebooks:** all five notebooks are executed with
   `jupyter nbconvert --to notebook --execute` and verified to contain **zero error cells** — the
   prose numbers are the live outputs, not stale copy.
 - **Drift gate:** CI regenerates the web artifacts and fails if `headline.json` no longer matches the
@@ -262,7 +269,7 @@ The visualizer is **live on Vercel**: **https://cross-validation-visualizer.verc
 ## Roadmap / known limitations
 
 **Known limitations (today):**
-- The four **headline comparison numbers** in the visualizer are constants transcribed from the
+- The **headline comparison numbers** in the visualizer are constants transcribed from the
   notebooks (the fold layouts and detailed charts *are* recomputed live by the export script). They
   must be re-synced after a notebook change — CI now enforces this with a drift gate, but the sync
   itself is still manual.
@@ -272,8 +279,9 @@ The visualizer is **live on Vercel**: **https://cross-validation-visualizer.verc
 **Planned:**
 - **Auto-extract the headline numbers** from the executed notebooks so nothing is hand-transcribed,
   removing the drift risk at the source rather than just gating it.
-- **More CV methods** — a nested-CV distribution ("winner's curse") visualization, deeper
-  purged/embargoed CV, and additional splitters.
+- **More CV methods** — resampling leakage and learning/validation curves are now in (NB05); still on
+  the list: a nested-CV distribution ("winner's curse") visualization, deeper purged/embargoed CV,
+  and additional splitters.
 
 ---
 

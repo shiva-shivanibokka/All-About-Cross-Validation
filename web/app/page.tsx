@@ -6,10 +6,11 @@ import { Tip } from "./lib/tip";
 import FoldExplorer from "./components/FoldExplorer";
 import StoryTab, { StoryId } from "./components/StoryTab";
 import OofTab from "./components/OofTab";
+import CurvesTab from "./components/CurvesTab";
 import AboutTab from "./components/AboutTab";
 
 const REPO = "https://github.com/shiva-shivanibokka/All-About-Cross-Validation";
-const STORY_IDS = ["leakage", "groups", "time", "nested"];
+const STORY_IDS = ["leakage", "resampling", "groups", "time", "nested"];
 
 export default function Home() {
   const [active, setActive] = useState(CV_TABS[0].id);
@@ -57,6 +58,7 @@ export default function Home() {
         {tab.id === "explorer" && <FoldExplorer />}
         {STORY_IDS.includes(tab.id) && <StoryTab id={tab.id as StoryId} />}
         {tab.id === "oof" && <OofTab />}
+        {tab.id === "curves" && <CurvesTab />}
         {tab.id === "about" && <AboutTab />}
       </section>
 

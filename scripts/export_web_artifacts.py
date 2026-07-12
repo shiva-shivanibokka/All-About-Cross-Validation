@@ -108,6 +108,10 @@ HEADLINE = {
         "non_nested": 0.795, "nested": 0.790, "nested_std": 0.019,
         "note": "best_score_ is a selection score; nested CV is the honest generalization estimate.",
     },
+    "resample_leak": {  # NB05, German Credit — random oversampling before vs inside the fold
+        "leaky": 0.965, "correct": 0.794,
+        "note": "Oversampling before the split leaks duplicate minority rows across train and test.",
+    },
 }
 
 
@@ -206,11 +210,42 @@ def oof_classification():
                           "n": int(len(yv)), "pos": int(yv.sum())}}
 
 
+def curves():
+    """Learning curve (score vs training size) and validation curve (score vs model
+    complexity) on German Credit — cross-validation used as a bias/variance diagnostic (NB05)."""
+    from cv_datasets import load_credit, feature_types
+    from sklearn.compose import ColumnTransformer
+    from sklearn.preprocessing import OneHotEncoder, StandardScaler
+    from sklearn.pipeline import Pipeline
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.model_selection import learning_curve, validation_curve
+
+    X, y = load_credit(); num, cat = feature_types(X); yv = y.to_numpy()
+    pre = ColumnTransformer([("num", StandardScaler(), num),
+                             ("cat", OneHotEncoder(handle_unknown="ignore"), cat)])
+    cv = StratifiedKFold(5, shuffle=True, random_state=0)
+
+    est = Pipeline([("pre", pre), ("clf", DecisionTreeClassifier(max_depth=5, random_state=0))])
+    sizes, tr, te = learning_curve(est, X, yv, cv=cv, scoring="roc_auc",
+                                   train_sizes=np.linspace(0.1, 1.0, 6), random_state=0)
+    learning = {"sizes": [int(s) for s in sizes], "train": _round(tr.mean(1), 3), "cv": _round(te.mean(1), 3)}
+
+    depths = [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20]
+    est2 = Pipeline([("pre", pre), ("clf", DecisionTreeClassifier(random_state=0))])
+    trv, tev = validation_curve(est2, X, yv, param_name="clf__max_depth", param_range=depths,
+                                cv=cv, scoring="roc_auc")
+    validation = {"depths": depths, "train": _round(trv.mean(1), 3), "cv": _round(tev.mean(1), 3),
+                  "best_depth": int(depths[int(np.argmax(tev.mean(1)))])}
+    return {"learning": learning, "validation": validation}
+
+
 def build_charts():
     print("  leakage curve …");         leak = leakage_curve()
     print("  parkinsons OOF …");        errors, scatter = parkinsons_charts()
     print("  credit OOF ROC/CM …");     oof = oof_classification()
-    return {"leakage_curve": leak, "patient_errors": errors, "patient_scatter": scatter, "oof": oof}
+    print("  learning/validation curves …"); crv = curves()
+    return {"leakage_curve": leak, "patient_errors": errors, "patient_scatter": scatter,
+            "oof": oof, "curves": crv}
 
 
 def main():

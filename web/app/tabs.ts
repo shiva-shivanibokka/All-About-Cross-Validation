@@ -19,6 +19,11 @@ export const CV_TABS: CvTab[] = [
     help: "Data leakage is letting the model — or your choices about it — peek at the test rows. Here, selecting features on the full dataset before CV leaks the answer, so pure noise looks predictive.",
   },
   {
+    id: "resampling", title: "Resampling Leakage", badge: "German Credit",
+    tagline: "Oversampling to fix class imbalance is a modeling step — do it before the split and duplicate minority rows leak across train and test, manufacturing AUC 0.97 that collapses to 0.79 when done inside the fold.",
+    help: "Random oversampling duplicates minority-class rows. If you balance the whole dataset before cross-validating, a row and its copy can land in different folds, so the model is tested on rows it memorized. The fix: oversample inside each fold's training set only.",
+  },
+  {
     id: "groups", title: "Group Leakage", badge: "Parkinsons",
     tagline: "The same voice model reads as R² 0.91 with a random split and −0.57 once GroupKFold keeps each patient whole — it's actually worse than predicting the mean on unseen patients.",
     help: "When one entity (a patient) has many rows, a random split puts some of their rows in train and some in test, so the model memorizes the person. GroupKFold keeps every entity entirely on one side.",
@@ -37,6 +42,11 @@ export const CV_TABS: CvTab[] = [
     id: "oof", title: "Out-of-Fold", badge: "German Credit",
     tagline: "cross_val_predict gives every row one prediction — made while it sat in the held-out fold. Stitch them together and you can build an honest ROC curve and confusion matrix with no separate test set.",
     help: "Out-of-fold prediction assigns each row the prediction from the fold where it was held out. Concatenated, these let you evaluate the whole dataset at once — the leak-free way to draw ROC / PR curves and confusion matrices.",
+  },
+  {
+    id: "curves", title: "Learning Curves", badge: "German Credit",
+    tagline: "Cross-validation isn't only a score — swept across dataset size and model complexity it becomes a diagnostic that shows whether more data would help and where a model tips from underfitting into overfitting.",
+    help: "A learning curve varies the training-set size; a validation curve varies a hyperparameter. Both plot training score vs. cross-validated score — the gap between them is overfitting (variance), the level of the CV line is underfitting (bias).",
   },
   {
     id: "about", title: "About", badge: "the series",

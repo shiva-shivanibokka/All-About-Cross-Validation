@@ -40,6 +40,14 @@ export default function AboutTab() {
         estimate. <em>German Credit.</em>
       </p>
 
+      <h3><span className="num">05</span>Resampling Leakage &amp; Diagnostic Curves</h3>
+      <p>
+        Oversampling to fix class imbalance is a modeling step — do it before the split and it leaks
+        (<strong>Resampling Leakage</strong> tab). Then <span className="k">learning</span> and{" "}
+        <span className="k">validation</span> curves turn CV into a bias/variance diagnostic in the{" "}
+        <strong>Learning Curves</strong> tab. <em>German Credit.</em>
+      </p>
+
       <h3>The golden rules underneath all of it</h3>
       <ul>
         <li><strong>Never score on training rows,</strong> and never let one split&apos;s luck decide your result.</li>
@@ -50,7 +58,7 @@ export default function AboutTab() {
       </ul>
 
       <p style={{ marginTop: "1.4rem" }}>
-        The four notebooks, the dataset loaders, and this app all live on{" "}
+        The five notebooks, the dataset loaders, and this app all live on{" "}
         <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>.
       </p>
     </div>

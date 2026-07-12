@@ -6,7 +6,7 @@ import ScoreBars, { Bar } from "./ScoreBars";
 import { LeakageCurve, PatientErrors, PredVsActual } from "./charts";
 import { HowToRead, Sw } from "./HowToRead";
 
-export type StoryId = "leakage" | "groups" | "time" | "nested";
+export type StoryId = "leakage" | "resampling" | "groups" | "time" | "nested";
 
 const RED = "var(--test)", GREEN = "var(--good)";
 
@@ -50,6 +50,31 @@ function build(h: Headline, c: Charts | null, id: StoryId): Story {
             <>In the line chart, the more noise features you offer, the more spuriously-&ldquo;predictive&rdquo; ones leaky selection finds — the red line climbs while the honest green line stays pinned at chance.</>,
           ],
           takeaway: <>Leakage doesn&apos;t add a little noise — it manufactures skill that isn&apos;t there, and the more features you have, the bigger the illusion.</>,
+        },
+      };
+    case "resampling":
+      return {
+        min: 0.5, max: 1,
+        bars: [
+          { name: "Leaky", sub: "oversample before split", value: h.resample_leak.leaky, color: RED, display: h.resample_leak.leaky.toFixed(3) },
+          { name: "Correct", sub: "oversample inside fold", value: h.resample_leak.correct, color: GREEN, display: h.resample_leak.correct.toFixed(3) },
+        ],
+        callout: (
+          <>
+            German Credit, 30% &ldquo;bad&rdquo; risks. {h.resample_leak.note} A RandomForest reads{" "}
+            <strong>AUC {h.resample_leak.leaky.toFixed(2)}</strong> when the minority class is balanced before the
+            split, but <strong>{h.resample_leak.correct.toFixed(2)}</strong> once oversampling happens inside each
+            fold — a fake <strong>+{(h.resample_leak.leaky - h.resample_leak.correct).toFixed(2)} AUC</strong>.
+          </>
+        ),
+        how: {
+          points: [
+            <>Both bars are the same RandomForest and the same 5-fold CV; only <em>when</em> the oversampling happens differs.</>,
+            <><Sw c={RED} /> <b>Leaky</b> balances the whole dataset first, so a minority row and its duplicate copy can land on opposite sides of the split — the model is tested on rows it memorized.</>,
+            <><Sw c={GREEN} /> <b>Correct</b> oversamples only each fold&apos;s training rows and scores on the untouched, still-imbalanced test rows.</>,
+            <>The axis starts at 0.5 because <b>AUC 0.5 is chance</b> for a binary classifier.</>,
+          ],
+          takeaway: <>Oversampling (SMOTE, random duplication) is a modeling step — it belongs <b>inside</b> the CV loop, via an <span className="kbd">imblearn.pipeline.Pipeline</span>. Balancing before the split is the same leakage sin as feature selection before the split.</>,
         },
       };
     case "groups":

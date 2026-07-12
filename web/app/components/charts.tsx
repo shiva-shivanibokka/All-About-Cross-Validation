@@ -9,6 +9,8 @@ const GRID = "var(--border)";
 const RED = "var(--test)";     // the leaky / random / misleading method (app-wide)
 const GREEN = "var(--good)";   // the honest method (app-wide)
 const CYAN = "var(--cyan)";
+const LINE_TRAIN = "var(--train)";  // training score
+const LINE_CV = "var(--purge)";     // cross-validated score
 
 const lin = (v: number, d0: number, d1: number, r0: number, r1: number) =>
   r0 + ((v - d0) / (d1 - d0)) * (r1 - r0);
@@ -149,6 +151,51 @@ export function RocCurve({ d }: { d: Charts["oof"]["roc"] }) {
       {txt(X(0.62), Y(0.28), `AUC ${d.auc.toFixed(3)}`, { color: CYAN, mono: true, size: 16 })}
       {txt(S / 2, S - 4, "false-positive rate", {})}
       <text x={13} y={S / 2} transform={`rotate(-90 13 ${S / 2})`} textAnchor="middle" style={{ fill: AXIS, fontSize: 11 }}>true-positive rate</text>
+    </svg>
+  );
+}
+
+/* ---- Two-line diagnostic chart: training vs cross-validated score ---- */
+export function TwoLineChart({
+  xs, train, cv, xLabel, markerIdx, markerLabel, yMin = 0.5, yMax = 1.0,
+}: {
+  xs: (number | string)[]; train: number[]; cv: number[]; xLabel: string;
+  markerIdx?: number; markerLabel?: string; yMin?: number; yMax?: number;
+}) {
+  const W = 560, H = 320, L = 50, R = 78, T = 16, B = 50;
+  const n = xs.length;
+  const X = (i: number) => lin(i, 0, Math.max(1, n - 1), L, W - R);
+  const Y = (v: number) => clamp(lin(v, yMin, yMax, H - B, T), T, H - B);
+  const path = (ys: number[]) => ys.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const yticks: number[] = [];
+  for (let t = yMin; t <= yMax + 1e-9; t += 0.1) yticks.push(Math.round(t * 10) / 10);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Training vs cross-validated score">
+      {yticks.map((g) => (
+        <g key={g}>
+          <line x1={L} x2={W - R} y1={Y(g)} y2={Y(g)} stroke={GRID} strokeWidth={1} opacity={0.5} />
+          {txt(L - 8, Y(g) + 4, g.toFixed(1), { anchor: "end", mono: true })}
+        </g>
+      ))}
+      {markerIdx !== undefined && (
+        <g>
+          <line x1={X(markerIdx)} x2={X(markerIdx)} y1={T} y2={H - B} stroke={GREEN} strokeWidth={1.5} strokeDasharray="5 4" />
+          {markerLabel && txt(X(markerIdx), T - 4, markerLabel, { color: GREEN, mono: true })}
+        </g>
+      )}
+      <path d={path(train)} fill="none" stroke={LINE_TRAIN} strokeWidth={2.5} />
+      <path d={path(cv)} fill="none" stroke={LINE_CV} strokeWidth={2.5} />
+      {xs.map((x, i) => (
+        <g key={i}>
+          <circle cx={X(i)} cy={Y(train[i])} r={3} fill={LINE_TRAIN} />
+          <circle cx={X(i)} cy={Y(cv[i])} r={3} fill={LINE_CV} />
+          {(n <= 8 || i % 2 === 0) && txt(X(i), H - B + 18, `${x}`, { mono: true, size: 10 })}
+        </g>
+      ))}
+      {/* end-of-line legends */}
+      {txt(X(n - 1) + 6, Y(train[n - 1]) + 4, "train", { anchor: "start", color: LINE_TRAIN, mono: true })}
+      {txt(X(n - 1) + 6, Y(cv[n - 1]) + 4, "CV", { anchor: "start", color: LINE_CV, mono: true })}
+      {txt((L + W - R) / 2, H - 6, xLabel, {})}
     </svg>
   );
 }

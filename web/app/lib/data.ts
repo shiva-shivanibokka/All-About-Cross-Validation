@@ -22,6 +22,7 @@ export type Headline = {
   };
   time_leak: { shuffled_r2: number; timeseries_r2: number; note: string };
   nested: { non_nested: number; nested: number; nested_std: number; note: string };
+  resample_leak: { leaky: number; correct: number; note: string };
 };
 
 export type Charts = {
@@ -31,6 +32,10 @@ export type Charts = {
   oof: {
     roc: { fpr: number[]; tpr: number[]; auc: number };
     confusion: { tn: number; fp: number; fn: number; tp: number; n: number; pos: number };
+  };
+  curves: {
+    learning: { sizes: number[]; train: number[]; cv: number[] };
+    validation: { depths: number[]; train: number[]; cv: number[]; best_depth: number };
   };
 };
 

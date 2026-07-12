@@ -18,7 +18,8 @@ validation-first reference with a live web demo. Mirrors the structure of the
 - **Frontend:** Next.js, 100% client-side, deployed on Vercel — same stack as the
   supervised repo. But it visualizes the *validation process* (fold layouts, leakage
   gap, nested loops, purged bands), NOT a model runner — CV isn't a model.
-- **Scope:** full — repo hygiene + four notebooks + artifact export script + web app.
+- **Scope:** full — repo hygiene + five notebooks (NB05 added: resampling leakage + learning/validation
+  curves) + artifact export script + web app + GitHub Actions CI.
 
 ## Datasets — verified loading (2026-07-11)
 | Key | Loader | Shape | Role |
