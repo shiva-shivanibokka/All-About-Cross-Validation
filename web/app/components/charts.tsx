@@ -61,6 +61,7 @@ export function LeakageCurve({ d }: { d: Charts["leakage_curve"] }) {
         </g>
       ))}
       {txt((L + W - R) / 2, H - 8, "number of pure-noise features offered", {})}
+      <text x={13} y={(T + H - B) / 2} transform={`rotate(-90 13 ${(T + H - B) / 2})`} textAnchor="middle" style={{ fill: AXIS, fontSize: 11 }}>5-fold accuracy</text>
       {/* end labels */}
       {txt(X(d.feature_counts[d.feature_counts.length - 1]), Y(d.leaky[d.leaky.length - 1]) - 10, "leaky", { anchor: "end", color: RED, mono: true, size: 12 })}
       {txt(L + 4, Y(d.correct[0]) - 10, "honest", { anchor: "start", color: GREEN, mono: true, size: 12 })}
@@ -157,9 +158,9 @@ export function RocCurve({ d }: { d: Charts["oof"]["roc"] }) {
 
 /* ---- Two-line diagnostic chart: training vs cross-validated score ---- */
 export function TwoLineChart({
-  xs, train, cv, xLabel, markerIdx, markerLabel, yMin = 0.5, yMax = 1.0,
+  xs, train, cv, xLabel, yLabel = "ROC AUC", markerIdx, markerLabel, yMin = 0.5, yMax = 1.0,
 }: {
-  xs: (number | string)[]; train: number[]; cv: number[]; xLabel: string;
+  xs: (number | string)[]; train: number[]; cv: number[]; xLabel: string; yLabel?: string;
   markerIdx?: number; markerLabel?: string; yMin?: number; yMax?: number;
 }) {
   const W = 560, H = 320, L = 50, R = 78, T = 16, B = 50;
@@ -196,6 +197,7 @@ export function TwoLineChart({
       {txt(X(n - 1) + 6, Y(train[n - 1]) + 4, "train", { anchor: "start", color: LINE_TRAIN, mono: true })}
       {txt(X(n - 1) + 6, Y(cv[n - 1]) + 4, "CV", { anchor: "start", color: LINE_CV, mono: true })}
       {txt((L + W - R) / 2, H - 6, xLabel, {})}
+      <text x={13} y={(T + H - B) / 2} transform={`rotate(-90 13 ${(T + H - B) / 2})`} textAnchor="middle" style={{ fill: AXIS, fontSize: 11 }}>{yLabel}</text>
     </svg>
   );
 }
