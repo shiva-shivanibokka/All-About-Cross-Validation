@@ -1,69 +1,67 @@
+"use client";
+
+import { useState } from "react";
+import { CV_TABS } from "./tabs";
+import { Tip } from "./lib/tip";
 import FoldExplorer from "./components/FoldExplorer";
-import Headlines from "./components/Headlines";
+import StoryTab, { StoryId } from "./components/StoryTab";
+import AboutTab from "./components/AboutTab";
 
 const REPO = "https://github.com/shiva-shivanibokka/All-About-Cross-Validation";
+const STORY_IDS = ["leakage", "groups", "time", "nested"];
 
 export default function Home() {
+  const [active, setActive] = useState(CV_TABS[0].id);
+  const tab = CV_TABS.find((t) => t.id === active)!;
+
   return (
-    <main>
+    <main className="wrap">
       <header className="hero">
-        <div className="wrap">
-          <h1>
-            See how <span className="grad">cross-validation</span> splits your data
-          </h1>
-          <p>
-            Cross-validation is not a model — it&apos;s a discipline for measuring one honestly.
-            This visualizer shows the real fold layouts behind five splitters, and the leakage
-            traps that quietly manufacture fake scores.
-          </p>
-          <div className="pills">
-            <a className="pill" href="#explorer">▶ Explore the folds</a>
-            <a className="pill" href={REPO}>★ Notebooks &amp; code on GitHub</a>
-          </div>
-        </div>
+        <h1>All About Cross-Validation</h1>
+        <p>
+          Cross-validation isn&apos;t a model — it&apos;s the discipline for measuring one <strong>honestly</strong>.
+          This visualizer draws the real scikit-learn fold layouts behind five splitters and the leakage traps that
+          quietly manufacture fake scores. Every number comes straight from the companion notebooks, running{" "}
+          <strong>entirely in your browser</strong>.
+        </p>
+        <span className="live">
+          <b>●</b> live · real scikit-learn splits · nothing leaves your machine
+        </span>
       </header>
 
-      <section id="explorer">
-        <div className="wrap">
-          <p className="eyebrow">Interactive</p>
-          <h2>The Fold Explorer</h2>
-          <p className="lede">
-            Every splitter answers the same question — &ldquo;which rows train, which rows
-            test?&rdquo; — differently. Plain <span className="kbd">KFold</span> ignores structure;{" "}
-            <span className="kbd">StratifiedKFold</span> preserves class balance;{" "}
-            <span className="kbd">GroupKFold</span> keeps each entity whole;{" "}
-            <span className="kbd">TimeSeriesSplit</span> only ever trains on the past; and{" "}
-            <span className="kbd">Purged</span> carves a gap to stop labels leaking across time.
-          </p>
-          <FoldExplorer />
+      <nav className="tabs" role="tablist" aria-label="Cross-validation topics">
+        {CV_TABS.map((t) => (
+          <button
+            key={t.id}
+            className="tab"
+            role="tab"
+            aria-selected={t.id === active}
+            onClick={() => setActive(t.id)}
+          >
+            {t.title}
+          </button>
+        ))}
+      </nav>
+
+      <section className="panel" role="tabpanel">
+        <div className="panel-head">
+          <div className="htitle">
+            <h2>{tab.title}</h2>
+            <Tip text={tab.help} />
+          </div>
+          <span className="chip">{tab.badge}</span>
         </div>
+        <p className="panel-tagline">{tab.tagline}</p>
+
+        {tab.id === "explorer" && <FoldExplorer />}
+        {STORY_IDS.includes(tab.id) && <StoryTab id={tab.id as StoryId} />}
+        {tab.id === "about" && <AboutTab />}
       </section>
 
-      <section>
-        <div className="wrap">
-          <p className="eyebrow">Why it matters</p>
-          <h2>The same model, scored honestly vs. not</h2>
-          <p className="lede">
-            Pick the wrong split and your metrics don&apos;t just get noisier — they lie. Each pair
-            below is one model evaluated two ways; only the cross-validation strategy changed. The
-            numbers come straight from the notebooks.
-          </p>
-          <Headlines />
-        </div>
-      </section>
-
-      <footer>
-        <div className="wrap">
-          <p>
-            Built from the <strong>All About Cross-Validation</strong> notebooks — four
-            deeply-explained notebooks on real datasets (German Credit, Bike Sharing, Parkinsons
-            Telemonitoring).
-          </p>
-          <p>
-            <a href={REPO}>github.com/shiva-shivanibokka/All-About-Cross-Validation</a>
-          </p>
-        </div>
-      </footer>
+      <p className="footer">
+        Built by Shivani Bokka · scikit-learn · served client-side on Vercel ·{" "}
+        <a href={REPO} target="_blank" rel="noreferrer">source</a>
+      </p>
     </main>
   );
 }

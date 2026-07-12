@@ -20,7 +20,7 @@ export default function FoldExplorer() {
     getJSON<FoldsData>("/folds.json").then(setData).catch(() => setData(null));
   }, []);
 
-  if (!data) return <div className="card">Loading fold layouts…</div>;
+  if (!data) return <p className="note">Loading fold layouts…</p>;
 
   const order = ["KFold", "StratifiedKFold", "GroupKFold", "TimeSeriesSplit", "Purged"];
   const method: Method = data.methods[active];
@@ -28,13 +28,12 @@ export default function FoldExplorer() {
   const cols = { gridTemplateColumns: `repeat(${n}, 1fr)` };
 
   return (
-    <div className="card">
-      <div className="tabs">
+    <div className="fold-explorer">
+      <div className="seg">
         {order.map((m) => (
           <button
             key={m}
-            className="tab"
-            data-active={active === m}
+            aria-pressed={active === m}
             onClick={() => setActive(m)}
           >
             {m}
