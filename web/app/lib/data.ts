@@ -24,6 +24,16 @@ export type Headline = {
   nested: { non_nested: number; nested: number; nested_std: number; note: string };
 };
 
+export type Charts = {
+  leakage_curve: { feature_counts: number[]; leaky: number[]; correct: number[]; truth: number };
+  patient_errors: { patients: number[]; random_mae: number[]; group_mae: number[]; baseline_mae: number };
+  patient_scatter: { patient: number; actual: number[]; pred_random: number[]; pred_group: number[] };
+  oof: {
+    roc: { fpr: number[]; tpr: number[]; auc: number };
+    confusion: { tn: number; fp: number; fn: number; tp: number; n: number; pos: number };
+  };
+};
+
 export async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) throw new Error(`failed to load ${path}`);

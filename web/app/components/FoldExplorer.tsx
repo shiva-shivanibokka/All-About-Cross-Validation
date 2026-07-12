@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FoldsData, Method, getJSON } from "../lib/data";
+import { HowToRead } from "./HowToRead";
 
 const GROUP_COLORS = [
   "#4c72b0", "#dd8452", "#55a868", "#c44e52", "#8172b3", "#937860",
@@ -105,6 +106,16 @@ export default function FoldExplorer() {
         left→right is row order). Switch tabs to watch how the same data gets partitioned five
         different ways.
       </p>
+
+      <HowToRead
+        points={[
+          <>Each <b>column</b> is one sample; each <b>row</b> is one fold — the model trains and tests once per row.</>,
+          <><i className="swatch" style={{ background: "var(--train)" }} /> <b>train</b> rows fit the model; <i className="swatch" style={{ background: "var(--test)" }} /> <b>test</b> rows are held out and scored. Every sample is tested exactly once, across the folds.</>,
+          <>The top context strip shows what the splitter respects: the <b>class</b> row (Stratified keeps its ~30% balance in every fold) or the colored <b>group</b> row (GroupKFold keeps each color entirely in one fold).</>,
+          <>For <span className="kbd">TimeSeriesSplit</span> and <span className="kbd">Purged</span>, test always sits to the <em>right</em> of train (later in time), and grey cells are the future the model can&apos;t use yet.</>,
+        ]}
+        takeaway={<>Every splitter answers &ldquo;which rows train, which rows test?&rdquo; — the right one is the one whose fold shape matches how your data is actually structured.</>}
+      />
     </div>
   );
 }

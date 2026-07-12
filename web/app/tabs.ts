@@ -34,6 +34,11 @@ export const CV_TABS: CvTab[] = [
     help: "Tuning many configurations and reporting the best CV score is optimistic — you picked the luckiest one. Nested CV re-tunes inside each outer fold, so the reported score never saw the choice that produced it.",
   },
   {
+    id: "oof", title: "Out-of-Fold", badge: "German Credit",
+    tagline: "cross_val_predict gives every row one prediction — made while it sat in the held-out fold. Stitch them together and you can build an honest ROC curve and confusion matrix with no separate test set.",
+    help: "Out-of-fold prediction assigns each row the prediction from the fold where it was held out. Concatenated, these let you evaluate the whole dataset at once — the leak-free way to draw ROC / PR curves and confusion matrices.",
+  },
+  {
     id: "about", title: "About", badge: "the series",
     tagline: "What cross-validation is, what each notebook proves, and the golden rules underneath all of it.",
     help: "A plain-language guide to the four notebooks and the ideas this visualizer illustrates.",

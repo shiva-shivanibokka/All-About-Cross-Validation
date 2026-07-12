@@ -5,6 +5,7 @@ import { CV_TABS } from "./tabs";
 import { Tip } from "./lib/tip";
 import FoldExplorer from "./components/FoldExplorer";
 import StoryTab, { StoryId } from "./components/StoryTab";
+import OofTab from "./components/OofTab";
 import AboutTab from "./components/AboutTab";
 
 const REPO = "https://github.com/shiva-shivanibokka/All-About-Cross-Validation";
@@ -55,6 +56,7 @@ export default function Home() {
 
         {tab.id === "explorer" && <FoldExplorer />}
         {STORY_IDS.includes(tab.id) && <StoryTab id={tab.id as StoryId} />}
+        {tab.id === "oof" && <OofTab />}
         {tab.id === "about" && <AboutTab />}
       </section>
 
