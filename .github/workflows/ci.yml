@@ -3,12 +3,16 @@ name: CI
 # Runs on every push to main and every PR. Two independent jobs:
 #   web       — typecheck + production build of the Next.js visualizer (fully deterministic)
 #   notebooks — install deps, self-check the datasets, execute all 5 notebooks with a
-#               0-error gate, regenerate the web artifacts, and fail if the headline
-#               numbers have drifted out of sync with the notebooks.
+#               0-error gate, then prove the visualizer cites what those notebooks computed.
 #
-# The drift gate only checks headline.json, which is written from pure Python constants
-# and is therefore byte-identical on every platform — so a legitimate green build never
-# flips red on cross-platform floating-point noise in the computed charts.
+# The headline numbers are checked in two hops, because one hop alone proves nothing:
+#   notebooks → HEADLINE  each notebook calls cv_datasets.record_headline() where it computes
+#                         a number; export_web_artifacts.py compares its constants against that
+#                         record, within one unit of the constant's last decimal place.
+#   HEADLINE  → headline.json  the committed artifact must be regenerated from those constants.
+# Only the first hop touches computed values, and it compares with a tolerance, so thread-count
+# and BLAS noise in the model fits cannot turn a legitimate build red. The second hop is a byte
+# diff of a file written from pure Python constants, deterministic on every platform.
 
 on:
   push:
@@ -86,18 +90,32 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Regenerate web artifacts
+      # Executing the notebooks above wrote _notebook_headline.json via record_headline().
+      # Without it the export's check silently skips, so the gate would pass by doing nothing.
+      - name: Assert the notebooks recorded their headline numbers
+        run: |
+          if [ ! -f _notebook_headline.json ]; then
+            echo "::error::_notebook_headline.json was not produced. The notebooks must call"
+            echo "cv_datasets.record_headline() for every section the visualizer cites."
+            exit 1
+          fi
+          cat _notebook_headline.json
+
+      # This is the check with teeth: export_web_artifacts.py compares its hand-transcribed
+      # HEADLINE constants against what the notebooks just computed, and exits non-zero if the
+      # site would cite a number its own notebook no longer produces.
+      - name: Regenerate web artifacts (fails if HEADLINE drifted from the notebooks)
         run: python scripts/export_web_artifacts.py
 
-      # The one file whose values are transcribed by hand from the notebooks — if it drifts,
-      # the visualizer would show numbers the notebooks disagree with. Constants only, so this
-      # comparison is deterministic across platforms.
-      - name: Assert headline numbers are in sync with the notebooks
+      # Belt and braces: HEADLINE agreeing with the notebooks is worth nothing if the committed
+      # headline.json was never regenerated from it. Constants only, so this diff is
+      # deterministic across platforms.
+      - name: Assert committed headline.json was regenerated
         run: |
           if ! git diff --quiet -- web/public/headline.json; then
-            echo "::error::web/public/headline.json is out of sync with the HEADLINE constants in scripts/export_web_artifacts.py."
-            echo "Fix: update HEADLINE to match the notebook outputs, run 'python scripts/export_web_artifacts.py', and commit."
+            echo "::error::web/public/headline.json is stale versus the HEADLINE constants in scripts/export_web_artifacts.py."
+            echo "Fix: run 'python scripts/export_web_artifacts.py' and commit the result."
             git --no-pager diff -- web/public/headline.json
             exit 1
           fi
-          echo "headline.json is in sync with the notebooks."
+          echo "headline.json matches HEADLINE, and HEADLINE matches the notebooks."

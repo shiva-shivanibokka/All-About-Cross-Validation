@@ -140,7 +140,7 @@ flowchart LR
     end
     DS --> NB
     DS --> EXP["scripts/export_web_artifacts.py<br/>recomputes fold layouts + charts<br/>from real scikit-learn"]
-    NB -. numbers transcribed .-> EXP
+    NB -. "records headline numbers<br/>(export fails if they disagree)" .-> EXP
     EXP --> JSON["web/public/*.json<br/>folds · headline · charts"]
     JSON --> APP["Next.js visualizer<br/>client-side, inline-SVG charts"]
     APP --> VER["Vercel<br/>(static, auto-deploy on push)"]
@@ -150,8 +150,10 @@ flowchart LR
 models in the browser (heavy, non-reproducible) or hard-coding chart data by hand (drifts silently)
 were rejected in favor of a reproducible export: `export_web_artifacts.py` recomputes the fold
 layouts and detailed charts directly from scikit-learn, and the headline comparison numbers are
-transcribed from the notebooks as documented constants. Keeping the app 100% client-side means it
-deploys as static files, costs nothing to run, and keeps every computation on the visitor's machine.
+transcribed from the notebooks as documented constants -- constants the notebooks themselves now
+check, so a stale or mistyped one fails the build rather than reaching the site. Keeping the app
+100% client-side means it deploys as static files, costs nothing to run, and sends nothing about
+the visitor anywhere.
 
 ---
 
@@ -244,8 +246,13 @@ that run automatically in **CI on every push** ([`.github/workflows/ci.yml`](.gi
 - **Executable notebooks:** all five notebooks are executed with
   `jupyter nbconvert --to notebook --execute` and verified to contain **zero error cells** — the
   prose numbers are the live outputs, not stale copy.
-- **Drift gate:** CI regenerates the web artifacts and fails if `headline.json` no longer matches the
-  notebook-sourced constants — so the visualizer can't silently disagree with the notebooks.
+- **Drift gate (two hops):** each notebook calls `cv_datasets.record_headline()` at the point it
+  computes a number the site cites, writing `_notebook_headline.json`. `export_web_artifacts.py`
+  then fails if its `HEADLINE` constants disagree with that record, and CI fails if the committed
+  `headline.json` was not regenerated from those constants. Both hops are needed: comparing the
+  exported file against the constants it was generated from can never fail on its own. The first
+  hop compares with a tolerance of one unit in the constant's last decimal place, so real drift is
+  caught while BLAS and thread-count noise in the model fits is not.
 - **Web build:** `tsc --noEmit` + `next build` type-check and compile the app.
 
 The one gap that remains: the checks verify the notebooks *run* and that the headline numbers are in
@@ -269,16 +276,20 @@ The visualizer is **live on Vercel**: **https://cross-validation-visualizer.verc
 ## Roadmap / known limitations
 
 **Known limitations (today):**
-- The **headline comparison numbers** in the visualizer are constants transcribed from the
-  notebooks (the fold layouts and detailed charts *are* recomputed live by the export script). They
-  must be re-synced after a notebook change — CI now enforces this with a drift gate, but the sync
-  itself is still manual.
+- The **headline comparison numbers** in the visualizer are still constants transcribed from the
+  notebooks (the fold layouts and detailed charts *are* recomputed by the export script). Re-syncing
+  them after a notebook change is still a manual edit — but no longer a silent one: the notebooks
+  record what they computed and CI fails if the constants disagree.
+- The **`charts.json` drift check is weaker than the headline one.** CI regenerates it but does not
+  diff it, deliberately: those values are recomputed from real model fits, so a byte diff would flip
+  red on cross-platform floating-point noise.
 - The **Fold Explorer** uses a 48-sample demo strip for legibility; it illustrates fold *membership*,
   not the full datasets.
 
 **Planned:**
-- **Auto-extract the headline numbers** from the executed notebooks so nothing is hand-transcribed,
-  removing the drift risk at the source rather than just gating it.
+- **Read the recorded numbers directly** instead of transcribing them, so even the manual edit goes
+  away. The recording half already exists; what remains is having the export consume it rather than
+  check against it (which means deciding how to keep the committed artifact byte-stable).
 - **More CV methods** — resampling leakage and learning/validation curves are now in (NB05); still on
   the list: a nested-CV distribution ("winner's curse") visualization, deeper purged/embargoed CV,
   and additional splitters.

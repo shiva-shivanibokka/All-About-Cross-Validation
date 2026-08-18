@@ -12,6 +12,7 @@ Nothing is committed to the repo.
     from cv_datasets import load_credit, load_bike, load_parkinsons_groups, feature_types
 """
 from __future__ import annotations
+import json
 import os
 import warnings
 import numpy as np
@@ -19,6 +20,38 @@ import pandas as pd
 from sklearn.datasets import fetch_openml
 
 _CACHE = os.path.join(os.path.expanduser("~"), "scikit_learn_data")
+
+# The numbers the web visualizer cites are computed in the notebooks, not here. Each notebook
+# calls record_headline() right where it computes one, appending to a single JSON file that
+# scripts/export_web_artifacts.py checks its HEADLINE constants against. That is what stops the
+# site quietly disagreeing with the notebooks: before this existed, CI compared the exported
+# JSON against the constants it was generated from, which could never fail.
+NOTEBOOK_NUMBERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_notebook_headline.json")
+
+# Recorded well past the precision the site displays; the comparison in export_web_artifacts.py
+# is what applies the real tolerance. Rounding here only keeps the file readable and stable.
+HEADLINE_DP = 6
+
+
+def record_headline(section: str, **values) -> None:
+    """Record one panel's headline numbers, as computed by the notebook that owns them.
+
+    Merges into _notebook_headline.json (path fixed relative to this file, so it lands in the
+    repo root whatever the kernel's working directory is). Running a single notebook rewrites
+    only that notebook's sections.
+    """
+    data = {}
+    if os.path.exists(NOTEBOOK_NUMBERS):
+        with open(NOTEBOOK_NUMBERS, encoding="utf-8") as f:
+            data = json.load(f)
+    data[section] = {
+        k: (int(v) if isinstance(v, (int, np.integer)) and not isinstance(v, bool)
+            else round(float(v), HEADLINE_DP))
+        for k, v in values.items()
+    }
+    with open(NOTEBOOK_NUMBERS, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+    print(f"[headline] recorded {section}: {data[section]}")
 
 
 def feature_types(X: pd.DataFrame) -> tuple[list[str], list[str]]:

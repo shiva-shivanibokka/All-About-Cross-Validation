@@ -88,6 +88,75 @@ def build_folds():
             "methods": methods}
 
 
+# ----------------------------------------------------------------------------------------
+# The check that makes HEADLINE trustworthy.
+#
+# HEADLINE below is transcribed by hand from the notebooks, which means it can be transcribed
+# wrong, or go stale when a notebook changes. Diffing the exported headline.json against it
+# cannot catch that — the file is generated from those very constants, so it always agrees.
+#
+# So each notebook now calls cv_datasets.record_headline() at the point it computes one of
+# these numbers, writing _notebook_headline.json. This compares the two. A mismatch means the
+# site is citing a number its own notebook no longer produces, and fails the export.
+#
+# Tolerance is one unit in the constant's last decimal place: 0.907 must agree to ±0.001,
+# 2.43 to ±0.01. Tight enough that any drift a reader could see on the site is caught, loose
+# enough that BLAS/thread-count noise in the model fits does not turn CI red on its own.
+# ----------------------------------------------------------------------------------------
+
+def _decimals(x) -> int:
+    """Decimal places the constant is written to — how precisely we hold the notebook to it."""
+    t = repr(float(x))
+    return len(t.split(".")[1].rstrip("0")) if "." in t else 0
+
+
+def check_against_notebooks() -> None:
+    """Fail if HEADLINE disagrees with what the notebooks actually computed.
+
+    Silently skipped when _notebook_headline.json is absent, so the export still runs
+    standalone with no notebook execution. CI asserts the file exists, so it cannot no-op there.
+    """
+    path = os.path.join(HERE, "..", "_notebook_headline.json")
+    if not os.path.exists(path):
+        print("No _notebook_headline.json — skipping the notebook check "
+              "(run the notebooks to generate it).")
+        return
+
+    with open(path, encoding="utf-8") as f:
+        recorded = json.load(f)
+
+    problems = []
+    for section, values in recorded.items():
+        if section not in HEADLINE:
+            problems.append(f"{section}: recorded by a notebook but absent from HEADLINE")
+            continue
+        for key, got in values.items():
+            if key not in HEADLINE[section]:
+                problems.append(f"{section}.{key}: recorded as {got} but absent from HEADLINE")
+                continue
+            want = HEADLINE[section][key]
+            if isinstance(want, int) and isinstance(got, int):
+                ok = want == got
+            else:
+                ok = abs(float(got) - float(want)) <= 10 ** -_decimals(want)
+            if not ok:
+                problems.append(f"{section}.{key}: HEADLINE says {want}, notebook computed {got}")
+
+    missing = sorted(set(HEADLINE) - set(recorded))
+    if missing:
+        problems.append(f"no notebook recorded these sections: {', '.join(missing)} "
+                        f"(were all notebooks executed?)")
+
+    if problems:
+        report = ["HEADLINE disagrees with the notebooks:"]
+        report += ["  " + p for p in problems]
+        report += ["",
+                   "Fix: update HEADLINE in this file to the values the notebooks printed,",
+                   "then re-run this script and commit web/public/headline.json."]
+        raise SystemExit(chr(10).join(report))
+    print(f"HEADLINE agrees with all {len(recorded)} sections the notebooks recorded.")
+
+
 # Numbers each panel cites. Sourced from the executed notebooks (kept as constants so this
 # export needs no network and no multi-minute model runs).
 HEADLINE = {
@@ -249,6 +318,7 @@ def build_charts():
 
 
 def main():
+    check_against_notebooks()
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "folds.json"), "w") as f:
         json.dump(build_folds(), f, separators=(",", ":"))

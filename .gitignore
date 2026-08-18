@@ -5,6 +5,10 @@ __pycache__/
 .venv/
 venv/
 
+# Written by the notebooks (cv_datasets.record_headline) for the export script's drift check.
+# A record of one machine's run, not a source file.
+_notebook_headline.json
+
 # Data cache (datasets are fetched at runtime, never committed)
 scikit_learn_data/
 data/
