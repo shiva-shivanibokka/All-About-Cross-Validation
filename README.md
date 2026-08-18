@@ -150,7 +150,7 @@ flowchart LR
 models in the browser (heavy, non-reproducible) or hard-coding chart data by hand (drifts silently)
 were rejected in favor of a reproducible export: `export_web_artifacts.py` recomputes the fold
 layouts and detailed charts directly from scikit-learn, and the headline comparison numbers are
-transcribed from the notebooks as documented constants -- constants the notebooks themselves now
+transcribed from the notebooks as documented constants — constants the notebooks themselves now
 check, so a stale or mistyped one fails the build rather than reaching the site. Keeping the app
 100% client-side means it deploys as static files, costs nothing to run, and sends nothing about
 the visitor anywhere.
