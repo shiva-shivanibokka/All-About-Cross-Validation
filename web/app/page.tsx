@@ -23,11 +23,11 @@ export default function Home() {
         <p>
           Cross-validation isn&apos;t a model — it&apos;s the discipline for measuring one <strong>honestly</strong>.
           This visualizer draws the real scikit-learn fold layouts behind five splitters and the leakage traps that
-          quietly manufacture fake scores. Every number comes straight from the companion notebooks, running{" "}
-          <strong>entirely in your browser</strong>.
+          quietly manufacture fake scores. Every number here was computed by scikit-learn in the companion
+          notebooks and exported as JSON — the page itself is <strong>static, with no backend</strong>.
         </p>
         <span className="live">
-          <b>●</b> live · real scikit-learn splits · nothing leaves your machine
+          <b>●</b> real scikit-learn splits · notebook-computed · nothing leaves your machine
         </span>
       </header>
 
@@ -63,7 +63,7 @@ export default function Home() {
       </section>
 
       <p className="footer">
-        Built by Shivani Bokka · scikit-learn · served client-side on Vercel ·{" "}
+        Built by Shivani Bokka · scikit-learn · static site on Vercel ·{" "}
         <a href={REPO} target="_blank" rel="noreferrer">source</a>
       </p>
     </main>

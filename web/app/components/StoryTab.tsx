@@ -81,8 +81,8 @@ function build(h: Headline, c: Charts | null, id: StoryId): Story {
       return {
         min: -0.7, max: 1, baseline: { value: 0, label: "R² = 0 · predict-the-mean" },
         bars: [
-          { name: "Random KFold", sub: "patient rows leak", value: h.group_leak.random_r2, color: RED, display: h.group_leak.random_r2.toFixed(2) },
-          { name: "GroupKFold", sub: "each patient whole", value: h.group_leak.group_r2, color: GREEN, display: h.group_leak.group_r2.toFixed(2) },
+          { name: "Random KFold", sub: "patient rows leak", value: h.group_leak.random_r2, color: RED, display: h.group_leak.random_r2.toFixed(3) },
+          { name: "GroupKFold", sub: "each patient whole", value: h.group_leak.group_r2, color: GREEN, display: h.group_leak.group_r2.toFixed(3) },
         ],
         extra: c && (
           <>

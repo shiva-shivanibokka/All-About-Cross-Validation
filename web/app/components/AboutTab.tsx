@@ -5,7 +5,7 @@ export default function AboutTab() {
     <div className="about">
       <p>
         Cross-validation is not a model — it&apos;s the discipline for measuring one <span className="k">honestly</span>.
-        This visualizer is the companion to four notebooks that go from &ldquo;why training accuracy lies&rdquo; all the way
+        This visualizer is the companion to five notebooks that go from &ldquo;why training accuracy lies&rdquo; all the way
         to nested cross-validation, each written in plain English on a real dataset. Every number shown here comes straight
         from a notebook that executes end-to-end with zero errors.
       </p>
@@ -22,13 +22,13 @@ export default function AboutTab() {
       <p>
         <span className="k">KFold</span>, <span className="k">StratifiedKFold</span>, <span className="k">RepeatedStratifiedKFold</span>,{" "}
         <span className="k">ShuffleSplit</span>, LOOCV / Leave-P-Out, and out-of-fold prediction. The{" "}
-        <strong>Fold Explorer</strong> tab draws the first three (plus group and time splitters) on a live demo strip.{" "}
+        <strong>Fold Explorer</strong> tab draws the first three (plus group and time splitters) on a demo strip.{" "}
         <em>German Credit + Bike Sharing.</em>
       </p>
 
       <h3><span className="num">03</span>Grouped &amp; Time-Aware CV</h3>
       <p>
-        When one entity recurs, split on the entity; when time flows, never shuffle it. See both failures live in the{" "}
+        When one entity recurs, split on the entity; when time flows, never shuffle it. See both failures in the{" "}
         <strong>Group Leakage</strong> and <strong>Time Leakage</strong> tabs, plus purged &amp; embargoed CV for
         overlapping-label data. <em>Parkinsons Telemonitoring + Bike Sharing.</em>
       </p>

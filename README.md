@@ -1,7 +1,7 @@
 # All About Cross-Validation
 
 > A from-first-principles tour of how to **honestly measure** a machine-learning model —
-> four deeply-explained notebooks on real datasets, plus an interactive browser visualizer
+> five deeply-explained notebooks on real datasets, plus an interactive browser visualizer
 > of the fold layouts and the leakage traps that quietly manufacture fake scores.
 
 [![CI](https://github.com/shiva-shivanibokka/All-About-Cross-Validation/actions/workflows/ci.yml/badge.svg)](https://github.com/shiva-shivanibokka/All-About-Cross-Validation/actions/workflows/ci.yml)

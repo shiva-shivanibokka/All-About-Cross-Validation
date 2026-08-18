@@ -51,6 +51,6 @@ export const CV_TABS: CvTab[] = [
   {
     id: "about", title: "About", badge: "the series",
     tagline: "What cross-validation is, what each notebook proves, and the golden rules underneath all of it.",
-    help: "A plain-language guide to the four notebooks and the ideas this visualizer illustrates.",
+    help: "A plain-language guide to the five notebooks and the ideas this visualizer illustrates.",
   },
 ];

@@ -2,7 +2,7 @@ name: CI
 
 # Runs on every push to main and every PR. Two independent jobs:
 #   web       — typecheck + production build of the Next.js visualizer (fully deterministic)
-#   notebooks — install deps, self-check the datasets, execute all 4 notebooks with a
+#   notebooks — install deps, self-check the datasets, execute all 5 notebooks with a
 #               0-error gate, regenerate the web artifacts, and fail if the headline
 #               numbers have drifted out of sync with the notebooks.
 #
@@ -77,7 +77,7 @@ jobs:
       # error, so this is the "0-error gate". Output goes to a temp dir so the repo stays clean.
       - name: Execute notebooks (0-error gate)
         run: |
-          for nb in 01_foundations_and_leakage 02_the_kfold_family 03_grouped_and_time_aware 04_model_selection; do
+          for nb in 01_foundations_and_leakage 02_the_kfold_family 03_grouped_and_time_aware 04_model_selection 05_resampling_and_curves; do
             echo "::group::executing $nb"
             jupyter nbconvert --to notebook --execute \
               --ExecutePreprocessor.timeout=600 \
