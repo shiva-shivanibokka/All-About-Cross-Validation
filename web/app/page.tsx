@@ -16,6 +16,20 @@ export default function Home() {
   const [active, setActive] = useState(CV_TABS[0].id);
   const tab = CV_TABS.find((t) => t.id === active)!;
 
+  // Arrow / Home / End move between tabs and focus follows, per the ARIA tabs pattern.
+  function onTabKey(e: React.KeyboardEvent<HTMLElement>) {
+    const keys: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+    const i = CV_TABS.findIndex((t) => t.id === active);
+    let next = -1;
+    if (e.key in keys) next = (i + keys[e.key] + CV_TABS.length) % CV_TABS.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = CV_TABS.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    setActive(CV_TABS[next].id);
+    document.getElementById(`tab-${CV_TABS[next].id}`)?.focus();
+  }
+
   return (
     <main className="wrap">
       <header className="hero">
@@ -31,13 +45,17 @@ export default function Home() {
         </span>
       </header>
 
-      <nav className="tabs" role="tablist" aria-label="Cross-validation topics">
+      <nav className="tabs" role="tablist" aria-label="Cross-validation topics" onKeyDown={onTabKey}>
         {CV_TABS.map((t) => (
           <button
             key={t.id}
+            id={`tab-${t.id}`}
             className="tab"
             role="tab"
             aria-selected={t.id === active}
+            aria-controls={`panel-${t.id}`}
+            // roving tabindex: one Tab stop for the whole strip, arrows move within it
+            tabIndex={t.id === active ? 0 : -1}
             onClick={() => setActive(t.id)}
           >
             {t.title}
@@ -45,7 +63,7 @@ export default function Home() {
         ))}
       </nav>
 
-      <section className="panel" role="tabpanel">
+      <section className="panel" role="tabpanel" id={`panel-${tab.id}`} aria-labelledby={`tab-${tab.id}`}>
         <div className="panel-head">
           <div className="htitle">
             <h2>{tab.title}</h2>

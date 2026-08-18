@@ -47,9 +47,9 @@ export function LeakageCurve({ d }: { d: Charts["leakage_curve"] }) {
           {txt(L - 8, Y(g) + 4, g.toFixed(1), { anchor: "end", mono: true })}
         </g>
       ))}
-      {/* chance baseline */}
-      <line x1={L} x2={W - R} y1={Y(d.truth)} y2={Y(d.truth)} stroke="var(--amber)" strokeWidth={1.5} strokeDasharray="5 4" />
-      {txt(W - R, Y(d.truth) - 7, "chance = 0.50", { anchor: "end", color: "var(--amber)", mono: true })}
+      {/* chance baseline — the line stops short of its own label so the dashes never run through the text */}
+      <line x1={L} x2={W - R - 92} y1={Y(d.truth)} y2={Y(d.truth)} stroke="var(--amber)" strokeWidth={1.5} strokeDasharray="5 4" />
+      {txt(W - R, Y(d.truth) + 4, "chance = 0.50", { anchor: "end", color: "var(--amber)", mono: true })}
       {/* series */}
       <path d={path(d.correct)} fill="none" stroke={GREEN} strokeWidth={2.5} />
       <path d={path(d.leaky)} fill="none" stroke={RED} strokeWidth={2.5} />
