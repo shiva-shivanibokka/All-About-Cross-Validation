@@ -5,14 +5,15 @@ name: CI
 #   notebooks — install deps, self-check the datasets, execute all 5 notebooks with a
 #               0-error gate, then prove the visualizer cites what those notebooks computed.
 #
-# The headline numbers are checked in two hops, because one hop alone proves nothing:
+# Nothing the site shows is taken on trust; each number is checked back to the code that
+# produced it, in two hops, because one hop alone proves nothing:
 #   notebooks → HEADLINE  each notebook calls cv_datasets.record_headline() where it computes
 #                         a number; export_web_artifacts.py compares its constants against that
 #                         record, within one unit of the constant's last decimal place.
-#   HEADLINE  → headline.json  the committed artifact must be regenerated from those constants.
-# Only the first hop touches computed values, and it compares with a tolerance, so thread-count
-# and BLAS noise in the model fits cannot turn a legitimate build red. The second hop is a byte
-# diff of a file written from pure Python constants, deterministic on every platform.
+#   code → web/public/  --check recomputes every artifact and compares it against the committed
+#                       file rather than overwriting it, so a stale artifact fails the build.
+# Both hops compare numerically with a tolerance, so thread-count and BLAS noise in the model
+# fits cannot turn a legitimate build red, while any drift the site could render is caught.
 
 on:
   push:
@@ -101,21 +102,11 @@ jobs:
           fi
           cat _notebook_headline.json
 
-      # This is the check with teeth: export_web_artifacts.py compares its hand-transcribed
-      # HEADLINE constants against what the notebooks just computed, and exits non-zero if the
-      # site would cite a number its own notebook no longer produces.
-      - name: Regenerate web artifacts (fails if HEADLINE drifted from the notebooks)
-        run: python scripts/export_web_artifacts.py
-
-      # Belt and braces: HEADLINE agreeing with the notebooks is worth nothing if the committed
-      # headline.json was never regenerated from it. Constants only, so this diff is
-      # deterministic across platforms.
-      - name: Assert committed headline.json was regenerated
-        run: |
-          if ! git diff --quiet -- web/public/headline.json; then
-            echo "::error::web/public/headline.json is stale versus the HEADLINE constants in scripts/export_web_artifacts.py."
-            echo "Fix: run 'python scripts/export_web_artifacts.py' and commit the result."
-            git --no-pager diff -- web/public/headline.json
-            exit 1
-          fi
-          echo "headline.json matches HEADLINE, and HEADLINE matches the notebooks."
+      # The check with teeth. --check recomputes every artifact and compares it against the
+      # committed one instead of overwriting it. The comparison is numeric with a small
+      # tolerance, because charts.json comes from real model fits whose last float bits move
+      # with BLAS and thread count; headline.json and folds.json are constants and integer fold
+      # indices, so they match exactly and the tolerance never bites. Regenerating and then
+      # diffing would compare the output to itself and could never fail.
+      - name: Assert committed artifacts match what the code computes
+        run: python scripts/export_web_artifacts.py --check

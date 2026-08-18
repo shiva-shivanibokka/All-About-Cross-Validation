@@ -317,17 +317,92 @@ def build_charts():
             "oof": oof, "curves": crv}
 
 
+# charts.json is recomputed from real model fits, so it cannot be byte-diffed the way
+# headline.json can - the last bits of a float move with BLAS and thread count. Comparing
+# numerically instead gives it a real drift check anyway: anything that would visibly move a
+# line or a point on a chart is caught, arithmetic noise below what the SVG could render is not.
+CHART_TOL = 1e-3
+
+
+def _drift(new, old, path=""):
+    """Yield 'where: computed X, committed Y' for every value that moved beyond tolerance."""
+    if isinstance(new, dict):
+        for k in sorted(set(new) | set(old if isinstance(old, dict) else {})):
+            if not isinstance(old, dict) or k not in old:
+                yield f"{path}.{k}: present now, absent from the committed file"
+            elif k not in new:
+                yield f"{path}.{k}: in the committed file, no longer produced"
+            else:
+                yield from _drift(new[k], old[k], f"{path}.{k}")
+    elif isinstance(new, list):
+        if not isinstance(old, list) or len(new) != len(old):
+            yield f"{path}: length {len(new)}, committed {len(old) if isinstance(old, list) else 'not a list'}"
+        else:
+            for i, (a, b) in enumerate(zip(new, old)):
+                yield from _drift(a, b, f"{path}[{i}]")
+    elif isinstance(new, bool) or isinstance(old, bool) or new is None or old is None:
+        if new != old:
+            yield f"{path}: {new!r}, committed {old!r}"
+    elif isinstance(new, (int, float)) and isinstance(old, (int, float)):
+        if abs(float(new) - float(old)) > CHART_TOL * max(1.0, abs(float(old))):
+            yield f"{path}: {new}, committed {old}"
+    elif new != old:
+        yield f"{path}: {new!r}, committed {old!r}"
+
+
+def build_all():
+    """Every artifact the site reads, computed fresh."""
+    print("Computing artifacts (real scikit-learn; first run downloads datasets):")
+    folds = build_folds()
+    charts = build_charts()
+    return {"folds.json": folds, "headline.json": HEADLINE, "charts.json": charts}
+
+
+def write(artifacts):
+    os.makedirs(OUT, exist_ok=True)
+    for name, obj in artifacts.items():
+        indent, seps = (2, None) if name == "headline.json" else (None, (",", ":"))
+        with open(os.path.join(OUT, name), "w") as f:
+            json.dump(obj, f, indent=indent, separators=seps)
+    print("Wrote " + ", ".join(artifacts) + " to " + os.path.normpath(OUT))
+
+
+def check(artifacts):
+    """Compare freshly computed artifacts against the committed ones. Writes nothing.
+
+    This is what CI runs. Diffing the committed files against a fresh write would prove
+    nothing - it would be comparing the output to itself.
+    """
+    problems = []
+    for name, obj in artifacts.items():
+        path = os.path.join(OUT, name)
+        if not os.path.exists(path):
+            problems.append(f"{name}: not committed")
+            continue
+        with open(path, encoding="utf-8") as f:
+            committed = json.load(f)
+        drifted = list(_drift(obj, committed, name))
+        if drifted:
+            problems += drifted[:20]
+            if len(drifted) > 20:
+                problems.append(f"...and {len(drifted) - 20} more in {name}")
+
+    if problems:
+        report = ["Committed artifacts disagree with what the code computes:"]
+        report += ["  " + p for p in problems]
+        report += ["",
+                   "Fix: run 'python scripts/export_web_artifacts.py' and commit web/public/."]
+        raise SystemExit(chr(10).join(report))
+    print("Committed artifacts match what the code computes: " + ", ".join(artifacts) + ".")
+
+
 def main():
     check_against_notebooks()
-    os.makedirs(OUT, exist_ok=True)
-    with open(os.path.join(OUT, "folds.json"), "w") as f:
-        json.dump(build_folds(), f, separators=(",", ":"))
-    with open(os.path.join(OUT, "headline.json"), "w") as f:
-        json.dump(HEADLINE, f, indent=2)
-    print("Computing charts.json (real scikit-learn; first run downloads datasets):")
-    with open(os.path.join(OUT, "charts.json"), "w") as f:
-        json.dump(build_charts(), f, separators=(",", ":"))
-    print("Wrote folds.json, headline.json, charts.json to", os.path.normpath(OUT))
+    artifacts = build_all()
+    if "--check" in sys.argv:
+        check(artifacts)
+    else:
+        write(artifacts)
 
 
 if __name__ == "__main__":

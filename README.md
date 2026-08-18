@@ -247,17 +247,19 @@ that run automatically in **CI on every push** ([`.github/workflows/ci.yml`](.gi
   `jupyter nbconvert --to notebook --execute` and verified to contain **zero error cells** — the
   prose numbers are the live outputs, not stale copy.
 - **Drift gate (two hops):** each notebook calls `cv_datasets.record_headline()` at the point it
-  computes a number the site cites, writing `_notebook_headline.json`. `export_web_artifacts.py`
-  then fails if its `HEADLINE` constants disagree with that record, and CI fails if the committed
-  `headline.json` was not regenerated from those constants. Both hops are needed: comparing the
-  exported file against the constants it was generated from can never fail on its own. The first
-  hop compares with a tolerance of one unit in the constant's last decimal place, so real drift is
-  caught while BLAS and thread-count noise in the model fits is not.
+  computes a number the site cites, writing `_notebook_headline.json`; `export_web_artifacts.py`
+  fails if its `HEADLINE` constants disagree with that record. Then
+  `export_web_artifacts.py --check` recomputes **every** artifact and compares it against the
+  committed file rather than overwriting it, so a stale `folds.json`, `headline.json` or
+  `charts.json` fails the build. Both hops are needed, and neither may be a regenerate-then-diff:
+  comparing a file against the code that just wrote it can never fail. Comparisons are numeric
+  with a tolerance, so any drift the site could render is caught while BLAS and thread-count noise
+  in the model fits is not.
 - **Web build:** `tsc --noEmit` + `next build` type-check and compile the app.
 
-The one gap that remains: the checks verify the notebooks *run* and that the headline numbers are in
-sync, but they don't assert every intermediate numeric output — a subtly wrong (but non-erroring)
-value could still slip through.
+The one gap that remains: every number the *site* shows is now checked back to the code that
+produced it, but the notebooks' own intermediate outputs are not — a subtly wrong (but non-erroring)
+value that never reaches an artifact could still slip through.
 
 ---
 
@@ -280,9 +282,6 @@ The visualizer is **live on Vercel**: **https://cross-validation-visualizer.verc
   notebooks (the fold layouts and detailed charts *are* recomputed by the export script). Re-syncing
   them after a notebook change is still a manual edit — but no longer a silent one: the notebooks
   record what they computed and CI fails if the constants disagree.
-- The **`charts.json` drift check is weaker than the headline one.** CI regenerates it but does not
-  diff it, deliberately: those values are recomputed from real model fits, so a byte diff would flip
-  red on cross-platform floating-point noise.
 - The **Fold Explorer** uses a 48-sample demo strip for legibility; it illustrates fold *membership*,
   not the full datasets.
 
