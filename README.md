@@ -229,7 +229,6 @@ the export if you change a notebook or the export script.
 │   ├── app/                           # pages, components, inline-SVG charts, data types
 │   └── public/                        # folds.json · headline.json · charts.json
 ├── .github/workflows/ci.yml           # CI: notebooks 0-error gate + drift gate + web build
-├── PLAN.md                            # living build plan / design decisions
 ├── requirements.txt
 └── LICENSE
 ```
